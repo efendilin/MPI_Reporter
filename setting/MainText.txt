@@ -1,0 +1,18 @@
+﻿                 NUCLEAR MEDICINE REPORT
+              ===========================
+         {tracerT} MYOCARDIAL PERFUSION SCAN
+    
+    {Patient}{TracerProc}
+
+Analysis of stress/ redistribution images show :
+  1. Anterior wall : {Antstatus}
+  2. Septal wall   : {Sepstatus}
+  3. Inferior wall : {Infstatus}
+  4. Lateral wall  : {Latstatus}
+  5. Apical wall   : {Apstatus}
+
+The lung uptake was {LungC} L/H ratio was {SLH} (stress)
+                             L/H ratio was {RLH} (rest)
+    
+NUCLEAR CARDIOLOGY DIAGNOSIS :
+{CoMm}

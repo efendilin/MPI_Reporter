@@ -1,0 +1,37 @@
+﻿                        NUCLEAR MEDICINE REPORT
+             ===================================
+           Myocardial Blood Flow Quantitation (MBFQ)
+  
+檢查流程：Tc-99m-MIBI Rest/Stress DySPECT 
+{0[RMibiDose]:4.2f} mCi of Tc-99m-sestamibi (MIBI) was administrated via IV injection at rest after the patient drank 300cc of water. The rest listmode dynamic SPECT (DySPECT) was started 10 sec prior to the MIBI injection and continued for 10 minutes. After 2.5 hours,  {0[SMibiDose]:4.2f} mCi of MIBI was reinjected via IV injection at dipyridamole-stress after the patient drank another 300cc of water. The stress listmode DySPECT was performed 10 sec prior to the stress MIBI injection and continued for another 10 minutes.
+ 
+藥物負荷流程
+The patient was infused with {0[DipDose]:s} mg of dipyridamole for 4 minutes and achieved peak hyperemia at the 7th minutes. Baseline heart rate was  {0[BHR]:s} bpm and increased to  {0[AHR]:s} bpm at the peak hyperemia. Baseline blood pressure was  {0[BBP]:s} mmHg and increased to  {0[ABP]:s} mmHg at the peak hyperemia, which is normal response to pharmacological stress. {0[patsym]:}
+
+檢查結果
+Study Quality: Stress: {0[SQC]:s}, Rest: {0[RQC]:s}
+Technical Issues: {0[TechQC]:s}
+Degraded Flow Status (Extent):
+LAD={0[LADStatus]:s}({0[LADArea]:s}%)
+LCX={0[LCXStatus]:s}({0[LCXArea]:s}%)
+RCA={0[RCAStatus]:s}({0[RCAArea]:s}%)
+LV= {0[LVStatus]:s}({0[LVArea]:s}%)
+
+OVERALL IMPRESSION:
+The most degraded flow status was {0[MDFStatus]:s} that occupied {0[MDFArea]:s}% of the myocardium.
++----------+-----+--------+----------+----------+------+
+|          |     |        | Moderate |   Mild   |Normal|
+|Infarction|Steal|Ischemia| abnormal | abnormal |Limit |
++----------+-----+--------+----------+----------+------+
+|{0[Infar]:^10}|{0[Steal]:^5}|{0[Isch]:^8}|{0[Moab]:^10}|{0[Miab]:^10}|{0[NL]:^6}|
++----------+-----+--------+----------+----------+------+
+|{0[InfA]:^10}|{0[SteA]:^5}|{0[IschA]:^8}|{0[MoabA]:^10}|{0[MiabA]:^10}|{0[NLA]:^6}|
++----------+-----+--------+----------+----------+------+
+
+
+
+MBFQ血流狀態圖顯示:
+ 1. 左前降支動脈(LAD){0[LADchinese]:s}。
+ 2. 左迴旋支動脈(LCX){0[LCXchinese]:s} 。
+ 3. 右側冠狀動脈(RCA){0[RCAchinese]:s} 。
+ 4. 整個左心室(LV){0[LVchinese]:s} 。 
