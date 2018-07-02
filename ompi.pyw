@@ -2,50 +2,12 @@
 import sys
 import win32clipboard
 import win32con
-import subprocess
 import os
-import configparser
 
 from PyQt5 import QtCore, QtWidgets
 from mpi import Ui_MainWindow
-from form import Ui_formDialog
 from pywinauto.application import Application
 from pywinauto.findwindows import find_windows
-
-class MyForm(QtWidgets.QDialog):
-    def __init__(self, parent, file):
-        QtWidgets.QDialog.__init__(self, parent)
-        self.form = Ui_formDialog()
-        self.form.setupUi(self)
-        self.form.file = file
-
-
-        self.form.plainTextEdit.textChanged.connect(self.textchange)
-
-        try:
-            f = open(file, 'r', encoding='utf-8-sig')
-        except UnicodeDecodeError:
-            f = open(file, 'r', encoding='cp950')
-        else:
-            MainText = os.linesep.join(f.read().split('\n'))
-            f.close()
-        self.form.plainTextEdit.setPlainText(MainText)
-        self.form.TextModified = False
-
-        return
-
-    def textchange(self):
-        self.form.TextModified = True
-        return
-
-    def isTextchange(self):
-        return self.form.TextModified
-
-    def getInputs(self):
-        return self.form.plainTextEdit.toPlainText()
-
-
-
 
 class MyWin(QtWidgets.QMainWindow):
     def __init__(self, parent=None):
@@ -74,81 +36,21 @@ class MyWin(QtWidgets.QMainWindow):
         self.ui.MBFQSend.clicked.connect(self.mbfqSend)
         self.ui.Load.clicked.connect(self.LoadF)
         self.ui.Sign.clicked.connect(self.SignF)
-        self.ui.actionMPI_2.triggered.connect(self.MPImenu)
-        self.ui.actionMBFQ.triggered.connect(self.MBFQmenu)
-        self.ui.MBFQClean.clicked.connect(self.MBFQClean)
-
-
-        return
-
-    def MPImenu(self):
-        file = './setting/MainText.txt'
-        myfrom = MyForm(myapp, file)
-        if myfrom.exec_() and myfrom.isTextchange():
-            Text = myfrom.getInputs()
-            try:
-                f = open(file, 'w', encoding='utf-8-sig')
-            except UnicodeDecodeError:
-                f = open(file, 'w', encoding='cp950')
-            else:
-                f.write(Text)
-                f.close()
-                global MainText
-                MainText = Text
-
-        return
-
-    def MBFQmenu(self):
-        file = './setting/MBFQText.txt'
-        myfrom = MyForm(myapp, file)
-        if myfrom.exec_() and myfrom.isTextchange():
-            Text = myfrom.getInputs()
-            try:
-                f = open(file, 'w', encoding='utf-8-sig')
-            except UnicodeDecodeError:
-                f = open(file, 'w', encoding='cp950')
-            else:
-                f.write(Text)
-                f.close()
-                global  MBFQ_Text
-                MBFQ_Text = Text
-
-        return
-        
-    def GetClipboard(self):
-        win32clipboard.OpenClipboard()
-        temp = win32clipboard.GetClipboardData(win32con.CF_UNICODETEXT)
-        win32clipboard.CloseClipboard()
-        return temp
-    
-    def SetClipboard(self, text):
-        win32clipboard.OpenClipboard()
-        win32clipboard.EmptyClipboard()
-        win32clipboard.SetClipboardData(win32con.CF_UNICODETEXT, text)
-        win32clipboard.CloseClipboard()
-        return
 
     def SignF(self):
         w_handle = find_windows(title='EBM UniReport') # find the EBM if exist or not
         if not w_handle:
-            self.SetStatusBar('red', 'EMB report is not found')
+            self.SetStatusBar('red', 'EMB report is not found, 已拷貝到剪貼簿')
         else:
             # print("I find the EBM Report!!!")
             app = Application().connect(title_re="EBM UniReport")
             title = str(app.TMainForm.element_info)
             Title = title.split()
             if 'ID' in Title:
-                r = ""
-                v = ""
                 if self.ui.RBox.currentIndex():
-                    r = self.ui.RBox.currentText()
+                    app.TMainForm.Edit4.SetText(self.ui.RBox.currentText())
                 if self.ui.VBox.currentIndex():
-                    v = self.ui.VBox.currentText()
-                ctext = 'IamSep' + r + 'IamSep' + v
-                temp = self.GetClipboard()
-                self.SetClipboard(ctext)
-                os.system("sender.ahk")
-                self.SetClipboard(temp)
+                    app.TMainForm.Edit3.SetText(self.ui.VBox.currentText())
             else:
                 self.SetStatusBar('red', 'EBM report is not in EIDT window')
 
@@ -181,22 +83,21 @@ class MyWin(QtWidgets.QMainWindow):
         w_handle = find_windows(title='EBM UniReport') # find the EBM if exist or not
         if not w_handle:
             self.SetStatusBar('red', 'EMB report is not found, try in clipboard')
-            Text = self.GetClipboard()
+            win32clipboard.OpenClipboard()
+            Text = win32clipboard.GetClipboardData(win32con.CF_UNICODETEXT)
+            win32clipboard.CloseClipboard()
         else:
             # print("I find the EBM Report!!!")
             app = Application().connect(title_re="EBM UniReport")
             title = str(app.TMainForm.element_info)
             Title = title.split()
             if 'ID' in Title:
-                #ahk_res = subprocess.check_output(["loader.exe", "*"], shell=False)
-                #Text = ahk_res.decode("utf8")
-                os.system("loader.exe")
-                Text = self.GetClipboard()
+                Text = app.TMainForm.Edit0.WindowText()
             else:
                 self.SetStatusBar('red', 'EBM report is not in EIDT window')
 
         if Text.find("NUCLEAR MEDICINE REPORT") != -1:
-            Text = Text.split('NUCLEAR CARDIOLOGY DIAGNOSIS :'+os.linesep)
+            Text = Text.split('NUCLEAR CARDIOLOGY DIAGNOSIS :\r\n')
             self.ui.Comm.setText(Text[1])
             textList = Text[0].splitlines()
 
@@ -237,8 +138,6 @@ class MyWin(QtWidgets.QMainWindow):
 
     def Addlesion(self):  # new lesion added
         Deep = ""
-        templet = ""
-        tLesion = []
         Wallstatus = {'Ant':0,'AL':0,'Lat':0,'IL':0,'Inf':0,'IS':0,'Sep':0,'AS':0,'AP':0}
         
         for radiobox in self.ui.groupStatus.findChildren(QtWidgets.QRadioButton):
@@ -277,51 +176,55 @@ class MyWin(QtWidgets.QMainWindow):
                     if checkbox.text() == 'AP':
                         self.ui.AP.setCurrentText(Status)
 
-        if Status in Phrase.keys():
-            templet = Phrase[Status]
-
-        for key in Wallstatus:
-            if Wallstatus[key]:
-                if key == "AP":
-                    tLesion.append(WallDic[key])
-                    TLesion.append(WallDic[key])
-                else:
-                    tLesion.append(WallDic[key])
-                    TLesion.append(Deep + WallDic[key])
-
-
         if not (Status == 'Attenuation' or Status == 'Hypokinesia'):
-            if len(TLesion):
-                self.AddComm(1, templet.format(self.Arranger(TLesion).capitalize(),self.Arranger(tLesion)))
+            for key in Wallstatus:
+                if Wallstatus[key]:
+                    if key == "AP":
+                        TLesion.append(WallDic[key])
+                    else:
+                        TLesion.append(Deep + WallDic[key])
+            if len(TLesion) > 2:
+                Wischemia = ', '.join(TLesion[:len(TLesion) - 1])
+                Wischemia = Wischemia + ' and ' + TLesion[len(TLesion) - 1]
+                self.AddComm(1, Wischemia.capitalize() + " wall ischemia.")
+            elif len(TLesion):
+                Wischemia = ' and '.join(TLesion)
+                self.AddComm(1, Wischemia.capitalize() + " wall ischemia.")
             else:
-                self.AddComm(1, Phrase['Normal'])
-
+                Wischemia = "Normal myocardial perfusion."
+                self.AddComm(1, Wischemia)
+        #print(len(TLesion))
         elif Status == 'Hypokinesia':
-            if len(tLesion):
-                self.AddComm(0, templet.format(self.Arranger(tLesion).capitalize()))
+            tLesion = []
+            for key in Wallstatus:
+                if Wallstatus[key]:
+                    tLesion.append(WallDic[key])
+            if len(tLesion) > 2:
+                Wischemia = ', '.join(tLesion[:len(tLesion) - 1])
+                Wischemia = Wischemia + ' and ' + tLesion[len(tLesion) - 1]
+                self.AddComm(0, Wischemia.capitalize() + " wall hypokinesia.")
+            elif len(tLesion):
+                Wischemia = ' and '.join(tLesion)
+                self.AddComm(0, Wischemia.capitalize() + " wall hypokinesia.")
             else:
-                self.AddComm(0, Phrase['AllHypo'])
-
+                self.AddComm(0, "Global LV wall hypokinesia.")
         else:
-            if len(tLesion):
-                self.AddComm(0, templet.format(self.Arranger(tLesion)))
-
+            tLesion = []
+            for key in Wallstatus:
+                if Wallstatus[key]:
+                    tLesion.append(WallDic[key])
+            if len(tLesion) > 2:
+                Wischemia = ', '.join(tLesion[:len(tLesion) - 1])
+                Wischemia = Wischemia + ' and ' + tLesion[len(tLesion) - 1]
+                self.AddComm(0, "Decreased tracer uptake in the " + Wischemia.capitalize() + " wall is likely due to attenuation artifact.")
+            elif len(tLesion):
+                Wischemia = ' and '.join(tLesion)
+                self.AddComm(0, "Decreased tracer uptake in the " + Wischemia.capitalize() + " wall is likely due to attenuation artifact.")
 
         self.ui.Partial.setChecked(1)
         return
             
         #print(TLesion[len(TLesion)-1])
-
-    def Arranger(self, lesions):
-        if len(lesions) > 2:
-            temp = ', '.join(lesions[:len(lesions) - 1])
-            temp = temp + ' and ' + lesions[len(lesions) - 1]
-        elif len(TLesion):
-            temp = ' and '.join(lesions)
-        else:
-            temp = ""
-
-        return temp
         
     def CleanL(self):
         TLesion.clear()
@@ -363,8 +266,6 @@ class MyWin(QtWidgets.QMainWindow):
         return
 
     def Sender(self, text):
-        r = ""
-        v = ""
         if self.ui.RBox.currentIndex():
             r = self.ui.RBox.currentText()
         if self.ui.VBox.currentIndex():
@@ -373,23 +274,18 @@ class MyWin(QtWidgets.QMainWindow):
         if w_handle:
             app = Application().connect(title_re="EBM UniReport")
             title = str(app.TMainForm.element_info)
-            text = text.replace('\r','')
             Title = title.split()
             if 'ID' in Title:
-                ctext = text + 'IamSep' + r + 'IamSep' + v
-                authotkey_process = subprocess.Popen(["sender.exe", "*"], shell=False,\
-                                                     stdin=subprocess.PIPE, stdout=subprocess.PIPE,\
-                                                     stderr=subprocess.STDOUT, encoding='cp950')
-                authotkey_process.communicate(ctext)
-                authotkey_process.kill()
-                #Self.SetClipboard(ctext)
-                #os.system("sender.exe")
+                text = text + 'IamSep' + r + 'IamSep' + v
+                win32clipboard.OpenClipboard()
+                win32clipboard.EmptyClipboard()
+                win32clipboard.SetClipboardData(win32con.CF_UNICODETEXT,text)
+                win32clipboard.CloseClipboard()
+                
+                os.system("sender.ahk")
+
             else:
-                self.SetClipboard(text)
                 self.SetStatusBar('red', 'EBM report is not in EIDT window')
-        else:
-            self.SetClipboard(text)
-            self.SetStatusBar('red', 'The report is in the clipboard')
         return
                 
     def AddFunction(self):
@@ -397,31 +293,29 @@ class MyWin(QtWidgets.QMainWindow):
         for line in self.ui.groupFun.findChildren(QtWidgets.QLineEdit):
             FunDic[line.objectName()] = line.text()
 
-        threshold = int(Phrase['EFthreshold'])
         if FunDic['SEF']:
             if FunDic['REF']:
-                if int(FunDic['SEF']) > threshold:
-                    self.AddComm(0, Phrase['LVEF'].format(FunDic['SEF'],FunDic['REF']))
+                if int(FunDic['SEF']) > 40:
+                    self.AddComm(0, "Stress LVEF:{}%, rest LVEF:{}%.".format(FunDic['SEF'],FunDic['REF']))
                 else:
-                    self.AddComm(0, Phrase['poorLVEF'].format(FunDic['SEF'], FunDic['REF']))
-            elif int(FunDic['SEF']) > threshold:
-                self.AddComm(0, Phrase['SEF'].format(FunDic['SEF']))
+                    self.AddComm(0, "Impaired LV contractility, Stress LVEF:{}%, rest LVEF:{}%.".format(FunDic['SEF'], FunDic['REF']))
+            elif int(FunDic['SEF']) > 40:
+                self.AddComm(0, "Stress LVEF:{}%.".format(FunDic['SEF']))
             else:
-                self.AddComm(0, Phrase['poorSEF'].format(FunDic['SEF']))
-
+                self.AddComm(0, "Impaired LV contractility, Stress LVEF:{}%.".format(FunDic['SEF']))
         if FunDic['SLH'] and float(FunDic['SLH']) > 0.5:
-            self.AddComm(0, Phrase['highSLH'])
+            self.AddComm(0, "Lung congestion.")
         #elif FunDic['RLH'] and float(FunDic['RLH']) > 0.5:
         #    self.AddComm(0, "Lung congestion.")
 
         if FunDic['Ext'] and float(FunDic['Ext']) >= 10:
-            self.AddComm(0, Phrase['highExt'].format(FunDic['Ext']))
+            self.AddComm(0, "The total ischemia extent: {}%.".format(FunDic['Ext']))
 
         if FunDic["Tid"]:
-            self.AddComm(0, Phrase['Tid'].format(FunDic['Tid']))
+            self.AddComm(0, "Transient ischemic dilatation of LV after stress(TID={}).".format(FunDic['Tid']))
 
         if self.ui.LVD.isChecked():
-            self.AddComm(0, Phrase['LVD'])
+            self.AddComm(0, "Cardiomegaly with LV dilatation.")
         return
 
     def SendF(self):
@@ -496,7 +390,6 @@ class MyWin(QtWidgets.QMainWindow):
                               Sepstatus=lStatus['Sep'], Infstatus=lStatus['Inf'], \
                               Latstatus=lStatus['Lat'], Apstatus=lStatus['AP'], \
                               LungC=lungC, SLH=self.ui.SLH.text(), RLH=self.ui.RLH.text(), CoMm=os.linesep.join(Comm))
-            Text = os.linesep.join(Text.split('\n'))
             self.Sender(Text)
         else:
             self.SetStatusBar('red', 'Comm is empty')
@@ -529,8 +422,10 @@ class MyWin(QtWidgets.QMainWindow):
                 checkbox.setCheckState(0)
 
         if patsymp:
+            print(patsymp)
             mbfqData['patsym'] = "During stressed, the patient developed {}.".format(", ".join(patsymp))
         else:
+            print(patsymp)
             mbfqData['patsym'] = ""
 
         mbfqData['MDFStatus'] = self.ui.MDFStatus.currentText().lower()
@@ -560,33 +455,7 @@ class MyWin(QtWidgets.QMainWindow):
         Text = MBFQ_Text.format(mbfqData)
         self.ui.MDFStatus.setCurrentText("Normal")
         self.ui.MDFArea.clear()
-        self.ui.RMibiDose.setText('10')
-        self.ui.RRMibiDose.setText('0')
-        self.ui.SMibiDose.setText('30')
-        self.ui.RSMibiDose.setText('0')
         self.Sender(Text)
-        return
-
-    def MBFQClean(self):
-        for line in self.ui.tracerDose.findChildren(QtWidgets.QLineEdit):
-            line.clear()
-        for line in self.ui.stressVitalSign.findChildren(QtWidgets.QLineEdit):
-            line.clear()
-        for box in self.ui.qcBox.findChildren(QtWidgets.QComboBox):
-            box.setCurrentText("Excellent")
-        for line in self.ui.flowStatusBox.findChildren(QtWidgets.QLineEdit):
-            line.clear()
-        for box in self.ui.flowStatusBox.findChildren(QtWidgets.QComboBox):
-            box.setCurrentText("Normal")
-        for checkbox in self.ui.qcBox.findChildren(QtWidgets.QCheckBox):
-            if checkbox.isChecked():
-                checkbox.setCheckState(0)
-
-        self.ui.RMibiDose.setText('10')
-        self.ui.RRMibiDose.setText('0')
-        self.ui.SMibiDose.setText('30')
-        self.ui.RSMibiDose.setText('0')
-
         return
 
 
@@ -600,40 +469,86 @@ if __name__ == '__main__':
     TLesion = []
     #DefaultTracer = ["TL - 201"]
     procd = {}
-    config = configparser.ConfigParser()
-    config.read('./setting/setup.ini', encoding='utf-8-sig')
-    procd['Tl201'] = config['proc']['Tl201']
-    procd['MiBi'] = config['proc']['MiBi']
 
-    global MainText
-    try:
-        f = open('./setting/MainText.txt', 'r', encoding='utf-8-sig')
-    except UnicodeDecodeError:
-        f = open('./setting/MainText.txt,' 'r', encoding='cp950')
-    else:
-        MainText = os.linesep.join(f.read().split('\n'))
-        f.close()
-    global MBFQ_Text
-    try:
-        f = open('./setting/MBFQText.txt', 'r', encoding='utf-8-sig')
-    except UnicodeDecodeError:
-        f = open('./setting/MBFQText.txt,' 'r', encoding='cp950')
-    else:
-        MBFQ_Text = os.linesep.join(f.read().split('\n'))
-        f.close()
+    procd['Tl201'] = '''\
+Tl-201 myocardial perfusion scan was done with dipyridamole stress. Dipyridamole 0.57mg/kg was IV injected for 5 minutes. \
+Tl-201 2mCi was injected 1 minutes after pharmacological stress. Images were started 5 min and 4 hrs after injection with SPECT.\
+Images were reconstructed with iterative reconstruction technique and displayed in multiple transaxial planes and 3D pictures.\r\n\
+    '''
+    procd['MiBi'] = '''\
+Tc-99m sestamibi myocardial perfusion scan was done with dipyridamole stress. Dipyridamole 0.57 mg/kg was IV injected for 5 minutes.\
+Tc-99m sestamibi was injected after pharmacological stress and at rest, 10mCi and 25mCi respectively. Images were started 60 min after \
+1st and 2nd injection with SPECT. Images were reconstructed with iterative reconstruction technique and displayed in multiple transaxial\
+ planes and 3D pictures.\r\n\
+    '''
 
-    Phrase = {}
-    try:
-        f = open('./setting/Phrase.txt', 'r', encoding='utf-8-sig')
-    except UnicodeDecodeError:
-        f = open('./setting/Phrase.txt', 'r', encoding='cp950')
-    while True:
-        t = f.readline()
-        if t == '': break
-        if ':' in t:
-            keypair = t.strip().split(':',1)
-            Phrase[keypair[0]] = keypair[1]
-    f.close()
+    MainText = """\
+                 NUCLEAR MEDICINE REPORT\r\n\
+              ===========================\r\n\
+         {tracerT} MYOCARDIAL PERFUSION SCAN\r\n\
+    \r\n\
+    {Patient}\
+    {TracerProc}\
+\r\n\
+Analysis of stress/ redistribution images show :\r\n\
+  1. Anterior wall : {Antstatus}\r\n\
+  2. Septal wall   : {Sepstatus}\r\n\
+  3. Inferior wall : {Infstatus}\r\n\
+  4. Lateral wall  : {Latstatus}\r\n\
+  5. Apical wall   : {Apstatus}\r\n\
+\r\n\
+The lung uptake was {LungC} L/H ratio was {SLH} (stress)\r\n\
+                             L/H ratio was {RLH} (rest)\r\n\
+    \r\n\
+NUCLEAR CARDIOLOGY DIAGNOSIS :\r\n\
+{CoMm}\r\n\
+        """
+
+    MBFQ_Text = """\
+                        NUCLEAR MEDICINE REPORT\r\n\
+             ===================================\r\n\
+           Myocardial Blood Flow Quantitation (MBFQ)\r\n\
+  \r\n\
+檢查流程：Tc-99m-MIBI Rest/Stress DySPECT \r\n\
+{0[RMibiDose]:4.2f} mCi of Tc-99m-sestamibi (MIBI) was administrated via IV injection at rest after the patient drank 300cc of water.\
+The rest listmode dynamic SPECT (DySPECT) was started 10 sec prior to the MIBI injection and continued for 10 minutes.\
+After 2.5 hours,  {0[SMibiDose]:4.2f} mCi of MIBI was reinjected via IV injection at dipyridamole-stress after the patient drank another 300cc of water.\
+The stress listmode DySPECT was performed 10 sec prior to the stress MIBI injection and continued for another 10 minutes.\r\n\
+ \r\n\
+藥物負荷流程\r\n\
+The patient was infused with {0[DipDose]:s} mg of dipyridamole for 4 minutes and achieved peak hyperemia at the 7th minutes. \
+Baseline heart rate was  {0[BHR]:s} bpm and increased to  {0[AHR]:s} bpm at the peak hyperemia. Baseline blood pressure\
+ was  {0[BBP]:s} mmHg and increased to  {0[ABP]:s} mmHg at the peak hyperemia, \
+which is normal response to pharmacological stress. {0[patsym]:}\r\n\
+\r\n\
+檢查結果\r\n\
+Study Quality: Stress: {0[SQC]:s}, Rest: {0[RQC]:s}\r\n\
+Technical Issues: {0[TechQC]:s}\r\n\
+Degraded Flow Status (Extent):\r\n\
+LAD={0[LADStatus]:s}({0[LADArea]:s}%)\r\n\
+LCX={0[LCXStatus]:s}({0[LCXArea]:s}%)\r\n\
+RCA={0[RCAStatus]:s}({0[RCAArea]:s}%)\r\n\
+LV= {0[LVStatus]:s}({0[LVArea]:s}%)\r\n\
+\r\n\
+OVERALL IMPRESSION:\r\n\
+The most degraded flow status was {0[MDFStatus]:s} that occupied {0[MDFArea]:s}% of the myocardium.\r\n\
++----------+-----+--------+----------+----------+------+\r\n\
+|          |     |        | Moderate |   Mild   |Normal|\r\n\
+|Infarction|Steal|Ischemia| abnormal | abnormal |Limit |\r\n\
++----------+-----+--------+----------+----------+------+\r\n\
+|{0[Infar]:^10}|{0[Steal]:^5}|{0[Isch]:^8}|{0[Moab]:^10}|{0[Miab]:^10}|{0[NL]:^6}|\r\n\
++----------+-----+--------+----------+----------+------+\r\n\
+|{0[InfA]:^10}|{0[SteA]:^5}|{0[IschA]:^8}|{0[MoabA]:^10}|{0[MiabA]:^10}|{0[NLA]:^6}|\r\n\
++----------+-----+--------+----------+----------+------+\r\n\
+\r\n\
+
+
+MBFQ血流狀態圖顯示:\r\n\
+ 1. 左前降支動脈(LAD){0[LADchinese]:s}。\r\n\
+ 2. 左迴旋支動脈(LCX){0[LCXchinese]:s} 。\r\n\
+ 3. 右側冠狀動脈(RCA){0[RCAchinese]:s} 。\r\n\
+ 4. 整個左心室(LV){0[LVchinese]:s} 。 \r\n\
+  """
 
 
     app = QtWidgets.QApplication(sys.argv)

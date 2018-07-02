@@ -1,0 +1,18 @@
+﻿Normal:Normal myocardial perfusion.
+Reversible:{} wall ischemia.
+Partial reversible:{} wall ischemia.
+Irreversible:{} wall ischemia and possible {} wall scar formation.
+Reverse redistribution:{} wall ischemia.
+Attenuation:Decreased tracer uptake in the {} wall is likely due to attenuation artifact.
+Hypokinesia:{} wall hypokinesia.
+AllHypo:Global LV wall hypokinesia.
+LVEF:Stress LVEF:{}%, rest LVEF:{}%.
+SEF:Stress LVEF:{}%.
+EFthreshold:40
+poorLVEF:Impaired LV contractility, Stress LVEF:{}%, rest LVEF:{}%.
+poorSEF:Impaired LV contractility, Stress LVEF:{}%.
+highSLH:Lung congestion.
+LHthreshold:0.5
+highExt:The total ischemia extent: {}%.
+Tid:Transient ischemic dilatation of LV after stress(TID={}).
+LVD:LV dilatation.
